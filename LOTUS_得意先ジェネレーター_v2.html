@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOTUS STORE ジェネレーター v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Noto+Sans+JP:wght@400;700;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0D0D0F;--surface:#141417;--surface2:#1C1C21;--border:#2A2A32;
+  --accent:#FF4B4B;--accent2:#FF8C42;--gold:#F5C842;
+  --text:#F0EEF8;--muted:#6B6880;--green:#3DDA84;--blue:#4A9EFF;
+  --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;--font-body:'Noto Sans JP',sans-serif;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--font-body);}
+
+/* ── HEADER ── */
+.gen-header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;gap:14px;}
+.gen-logo{font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--accent);letter-spacing:-0.02em;}
+.gen-version{font-family:var(--font-mono);font-size:10px;background:var(--accent);color:#fff;border-radius:4px;padding:2px 6px;}
+.gen-sub{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-left:4px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);margin-left:auto;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* ── LAYOUT ── */
+.gen-body{display:grid;grid-template-columns:1fr 400px;gap:0;min-height:calc(100vh - 61px);}
+.panel-left{padding:24px 28px;overflow-y:auto;border-right:1px solid var(--border);}
+.panel-right{background:var(--surface);padding:24px 20px;overflow-y:auto;position:sticky;top:0;max-height:calc(100vh - 61px);}
+
+/* ── SECTION ── */
+.section{margin-bottom:28px;}
+.sec-title{font-family:var(--font-mono);font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.sec-title .badge{background:var(--accent);color:#fff;border-radius:3px;padding:1px 5px;font-size:9px;}
+
+/* ── WORKFLOW CARD (新規) ── */
+.workflow-card{background:linear-gradient(135deg,#1a2535,#121820);border:1px solid #2a3a4a;border-radius:14px;padding:20px;margin-bottom:28px;}
+.wf-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.2em;color:var(--blue);text-transform:uppercase;margin-bottom:16px;}
+.wf-steps{display:flex;flex-direction:column;gap:8px;}
+.wf-step{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);}
+.wf-step.active{background:rgba(74,158,255,0.08);border-color:rgba(74,158,255,0.2);}
+.wf-step.done{background:rgba(61,218,132,0.06);border-color:rgba(61,218,132,0.15);}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--border);font-family:var(--font-mono);font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted);}
+.wf-step.active .step-num{background:var(--blue);color:#fff;}
+.wf-step.done .step-num{background:var(--green);color:#fff;}
+.step-body{flex:1;}
+.step-label{font-size:12px;font-weight:700;margin-bottom:2px;}
+.step-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+
+/* ── IMPORT AREA ── */
+.import-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;}
+.import-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;color:var(--blue);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.import-row{display:flex;gap:8px;}
+.import-input{flex:1;background:#111215;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);font-family:var(--font-mono);outline:none;transition:border-color 0.15s;}
+.import-input:focus{border-color:var(--blue);}
+.import-input::placeholder{color:var(--muted);font-size:11px;}
+.btn-import{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:12px;font-family:var(--font-mono);font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;}
+.btn-import:hover{opacity:0.85;}
+.btn-import:disabled{opacity:0.4;cursor:default;}
+.import-status{margin-top:8px;font-size:11px;font-family:var(--font-mono);}
+.import-status.ok{color:var(--green);}
+.import-status.err{color:var(--accent);}
+.import-status.loading{color:var(--muted);}
+
+/* ── FORM ELEMENTS ── */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:10px;font-family:var(--font-mono);color:var(--muted);margin-bottom:5px;letter-spacing:0.06em;text-transform:uppercase;}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--text);font-family:var(--font-body);outline:none;transition:border-color 0.15s;}
+.field input:focus,.field textarea:focus{border-color:var(--blue);}
+.field textarea{resize:vertical;min-height:54px;font-size:12px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hint{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5;}
+.color-wrap{display:flex;gap:6px;align-items:center;}
+.color-wrap input[type=color]{width:40px;height:34px;border-radius:6px;border:1px solid var(--border);padding:2px;background:var(--surface2);cursor:pointer;}
+.color-wrap input[type=text]{flex:1;}
+
+/* ── PRODUCTS ── */
+.products-list{display:flex;flex-direction:column;gap:8px;}
+.p-row{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative;}
+.p-row-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.p-num{font-family:var(--font-mono);font-size:9px;background:var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);}
+.p-code{font-family:var(--font-mono);font-size:9px;background:rgba(74,158,255,0.15);border:1px solid rgba(74,158,255,0.3);border-radius:4px;padding:2px 6px;color:var(--blue);}
+.p-del{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px;transition:color 0.15s;}
+.p-del:hover{color:var(--accent);}
+.p-fields{display:grid;grid-template-columns:100px 1fr 1fr;gap:8px;margin-bottom:6px;}
+.p-fields2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.add-product-btn{width:100%;border:1px dashed var(--border);border-radius:10px;padding:10px;background:none;color:var(--muted);font-family:var(--font-mono);font-size:11px;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+.add-product-btn:hover{border-color:var(--green);color:var(--green);}
+
+/* ── ACTION BUTTONS ── */
+.actions{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.btn-gen{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;font-family:var(--font-head);cursor:pointer;letter-spacing:0.05em;transition:opacity 0.15s;}
+.btn-gen:hover{opacity:0.88;}
+.btn-save{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px;font-size:12px;font-family:var(--font-mono);cursor:pointer;transition:border-color 0.15s;}
+.btn-save:hover{border-color:var(--gold);}
+
+/* ── CLIENT LIST ── */
+.client-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.c-tab{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:11px;font-family:var(--font-mono);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.c-tab:hover{border-color:var(--muted);}
+.c-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.c-tab-new{border-style:dashed;}
+
+/* ── PREVIEW ── */
+.preview-header{font-family:var(--font-mono);font-size:10px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.phone-frame{width:280px;height:560px;border-radius:36px;border:8px solid #222;background:#111;overflow:hidden;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.6);position:relative;}
+.phone-notch{width:80px;height:20px;background:#111;border-radius:0 0 14px 14px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10;}
+.phone-screen{width:100%;height:100%;overflow:hidden;position:relative;}
+.phone-screen iframe{width:430px;height:700px;border:none;transform:scale(0.651);transform-origin:0 0;pointer-events:none;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1f;border:1px solid var(--border);border-radius:10px;padding:12px 22px;font-size:13px;font-family:var(--font-mono);opacity:0;transition:all 0.3s;z-index:9999;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:var(--green);color:var(--green);}
+.toast.err{border-color:var(--accent);color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div class="gen-header">
+  <div class="gen-logo">LOTUS<span style="color:var(--text);font-size:13px;font-weight:400;margin-left:4px;">STORE</span></div>
+  <span class="gen-version">v2</span>
+  <span class="gen-sub">Generator</span>
+  <div class="status-dot"></div>
+</div>
+
+<div class="gen-body">
+
+<!-- ══════════════ LEFT PANEL ══════════════ -->
+<div class="panel-left">
+
+  <!-- ワークフローガイド -->
+  <div class="workflow-card">
+    <div class="wf-title">🚀 セットアップフロー</div>
+    <div class="wf-steps">
+      <div class="wf-step done" id="wf-1">
+        <div class="step-num">✓</div>
+        <div class="step-body">
+          <div class="step-label">テンプレートセットアップGASを実行済み</div>
+          <div class="step-desc">得意先別スプシのテンプレートが生成済み</div>
+        </div>
+      </div>
+      <div class="wf-step active" id="wf-2">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-label">テンプレートを複製 → 得意先スプシを作成</div>
+          <div class="step-desc">「新規得意先を追加」ボタンでドライブに自動複製されます</div>
+        </div>
+      </div>
+      <div class="wf-step" id="wf-3">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-label">得意先スプシに情報・商品を入力</div>
+          <div class="step-desc">チーム情報シート・商品リストシートを埋める</div>
+        </div>
+      </div>
+      <div class="wf-step" id="wf-4">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <div class="step-label">得意先スプシのGASをデプロイ</div>
+          <div class="step-desc">GAS受注URLをチーム情報シートに貼り付ける</div>
+        </div>
+      </div>
+      <div class="wf-step" id="wf-5">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <div class="step-label">スプシURLを読み込んでWebアプリを生成</div>
+          <div class="step-desc">下の「スプシから読み込む」→「⚡ 生成」</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 得意先タブ -->
+  <div class="section">
+    <div class="sec-title">得意先を選択</div>
+    <div class="client-tabs" id="client-tabs"></div>
+  </div>
+
+  <!-- スプシから読み込む -->
+  <div class="section">
+    <div class="sec-title">スプシから読み込む <span class="badge">NEW</span></div>
+    <div class="import-box">
+      <div class="import-label">📊 GAS受注URL</div>
+      <div class="import-row">
+        <input class="import-input" id="import-url" type="text"
+               placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="import-label" style="margin-top:10px;">🏷️ チームコード</div>
+      <div class="import-row">
+        <input class="import-input" id="import-code" type="text"
+               placeholder="例: HAF-LTUS" maxlength="20"
+               style="text-transform:uppercase;"
+               oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-import" id="btn-import" onclick="importFromSpreadsheet()">読み込む</button>
+      </div>
+      <div class="import-status" id="import-status"></div>
+    </div>
+    <div class="hint">💡 GAS受注URLとチームコードを入力して「読み込む」を押すと、チーム情報・商品が自動でフォームに入力されます。</div>
+  </div>
+
+  <!-- チーム情報 -->
+  <div class="section">
+    <div class="sec-title">チーム情報</div>
+    <div class="field-row">
+      <div class="field">
+        <label>チームコード *</label>
+        <input id="f-code" type="text" placeholder="例: LOTUS" maxlength="12">
+      </div>
+      <div class="field">
+        <label>チーム名 *</label>
+        <input id="f-teamname" type="text" placeholder="例: 佼成学園">
+      </div>
+    </div>
+    <div class="field">
+      <label>学校名・会社名</label>
+      <input id="f-clientname" type="text" placeholder="例: 佼成学園中学校・高等学校">
+    </div>
+    <div class="field">
+      <label>サブタイトル</label>
+      <input id="f-subtitle" type="text" placeholder="例: アメリカンフットボール部">
+    </div>
+    <div class="field">
+      <label>ロゴ画像URL</label>
+      <input id="f-logo" type="text" placeholder="Google Drive サムネイルURL">
+    </div>
+    <div class="field">
+      <label>GAS受注URL <span style="color:var(--accent)">*</span></label>
+      <input id="f-gas" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+      <div class="hint">得意先スプシのGASをデプロイして生成されるURL</div>
+    </div>
+    <div class="field">
+      <label>ヒント文（ログイン画面に表示）</label>
+      <input id="f-hint" type="text" placeholder="例: チームコードは監督にご確認ください">
+    </div>
+  </div>
+
+  <!-- カラー -->
+  <div class="section">
+    <div class="sec-title">テーマカラー</div>
+    <div class="field-row">
+      <div class="field">
+        <label>メインカラー</label>
+        <div class="color-wrap">
+          <input type="color" id="c-main" value="#C0141E" oninput="syncColor('main',true)">
+          <input type="text" id="ct-main" value="#C0141E" placeholder="#C0141E" oninput="syncColor('main',false)">
+        </div>
+      </div>
+      <div class="field">
+        <label>サブカラー</label>
+        <div class="color-wrap">
+          <input type="color" id="c-dark" value="#9E0F18" oninput="syncColor('dark',true)">
+          <input type="text" id="ct-dark" value="#9E0F18" placeholder="#9E0F18" oninput="syncColor('dark',false)">
+        </div>
+      </div>
+    </div>
+    <div class="field" style="max-width:50%;padding-right:5px;">
+      <label>アクセントカラー</label>
+      <div class="color-wrap">
+        <input type="color" id="c-accent" value="#ffffff" oninput="syncColor('accent',true)">
+        <input type="text" id="ct-accent" value="#ffffff" placeholder="#ffffff" oninput="syncColor('accent',false)">
+      </div>
+    </div>
+  </div>
+
+  <!-- 商品リスト -->
+  <div class="section">
+    <div class="sec-title">商品リスト</div>
+    <div class="products-list" id="products-list"></div>
+    <button class="add-product-btn" onclick="addProduct()">＋ 商品を追加</button>
+  </div>
+
+  <!-- アクション -->
+  <div class="actions">
+    <button class="btn-gen" onclick="generateAndDownload()">⚡ Webアプリを生成してダウンロード</button>
+    <button class="btn-save" onclick="saveClient()">💾 この得意先を保存</button>
+  </div>
+
+</div><!-- /panel-left -->
+
+<!-- ══════════════ RIGHT PANEL ══════════════ -->
+<div class="panel-right">
+  <div class="preview-header">
+    <span>PREVIEW</span>
+    <span id="prev-label" style="color:var(--muted);font-size:9px;">リアルタイム更新</span>
+  </div>
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen">
+      <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+    </div>
+  </div>
+  <div style="margin-top:16px;font-size:10px;font-family:var(--font-mono);color:var(--muted);text-align:center;line-height:1.8;">
+    商品数: <span id="prev-prod-count" style="color:var(--text)">0</span> &nbsp;|&nbsp;
+    コード: <span id="prev-code" style="color:var(--blue)">—</span>
+  </div>
+</div>
+
+</div><!-- /gen-body -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let products   = [];
+let clients    = [];
+let activeIdx  = -1;
+let previewTimer = null;
+
+// テンプレートスプシID（LOTUS_テンプレートセットアップ_GAS.jsを実行済みのスプシ）
+// ★ セットアップ後にここに実際のIDを入力してください
+const TEMPLATE_SS_ID = 'YOUR_TEMPLATE_SS_ID_HERE';
+
+// ─── INIT ──────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadClients();
+  renderClientTabs();
+  if (clients.length === 0) addProduct();
+  schedulePreview();
+});
+
+// ─── COLOR SYNC ────────────────────────────────
+function syncColor(name, fromPicker) {
+  const picker = document.getElementById(`c-${name}`);
+  const text   = document.getElementById(`ct-${name}`);
+  if (fromPicker) {
+    text.value = picker.value;
+  } else {
+    const v = text.value.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) picker.value = v;
+  }
+  schedulePreview();
+}
+
+// ─── PRODUCT MANAGEMENT ────────────────────────
+function addProduct(data = {}) {
+  const idx = products.length;
+  products.push({
+    itemCode: data.itemCode || '',
+    name:     data.name     || '',
+    price:    data.price    || '',
+    sizes:    data.sizes    || 'S,M,L,XL,2XL',
+    img:      data.img      || '',
+    category: data.category || '',
+  });
+  renderProducts();
+  schedulePreview();
+}
+
+function renderProducts() {
+  const list = document.getElementById('products-list');
+  list.innerHTML = products.map((p, i) => `
+    <div class="p-row" id="p-row-${i}">
+      <div class="p-row-header">
+        <span class="p-num">#${i+1}</span>
+        ${p.itemCode ? `<span class="p-code">${p.itemCode}</span>` : ''}
+        <button class="p-del" onclick="delProduct(${i})">×</button>
+      </div>
+      <div class="p-fields">
+        <div class="field">
+          <label>品番</label>
+          <input type="text" value="${esc(p.itemCode)}" placeholder="2605-001"
+                 oninput="updateProduct(${i},'itemCode',this.value)">
+        </div>
+        <div class="field">
+          <label>アイテム名</label>
+          <input type="text" value="${esc(p.name)}" placeholder="プラクティスジャージ上"
+                 oninput="updateProduct(${i},'name',this.value)">
+        </div>
+        <div class="field">
+          <label>税込価格 (¥)</label>
+          <input type="number" value="${esc(p.price)}" placeholder="6600"
+                 oninput="updateProduct(${i},'price',this.value)">
+        </div>
+      </div>
+      <div class="p-fields2">
+        <div class="field">
+          <label>サイズ（カンマ区切り）</label>
+          <input type="text" value="${esc(p.sizes)}" placeholder="S,M,L,XL,2XL"
+                 oninput="updateProduct(${i},'sizes',this.value)">
+        </div>
+        <div class="field">
+          <label>画像URL</label>
+          <input type="text" value="${esc(p.img)}" placeholder="Google Drive URL"
+                 oninput="updateProduct(${i},'img',this.value)">
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateProduct(idx, key, val) {
+  products[idx][key] = val;
+  // 品番が更新されたらヘッダーを再描画
+  if (key === 'itemCode') renderProducts();
+  schedulePreview();
+}
+
+function delProduct(idx) {
+  products.splice(idx, 1);
+  renderProducts();
+  schedulePreview();
+}
+
+// ─── IMPORT FROM SPREADSHEET ────────────────────
+async function importFromSpreadsheet() {
+  // GAS受注URL（デプロイ後にここを更新すれば自動入力される）
+  const FIXED_GAS_URL = ''; // 例: 'https://script.google.com/macros/s/XXXXX/exec'
+
+  const rawUrl   = document.getElementById('import-url').value.trim() || FIXED_GAS_URL;
+  const codeInput = (document.getElementById('import-code')?.value || '').trim().toUpperCase();
+  const status   = document.getElementById('import-status');
+  const btn      = document.getElementById('btn-import');
+
+  if (!rawUrl) {
+    showStatus(status, 'GAS受注URLを入力してください', 'err');
+    return;
+  }
+  if (!codeInput) {
+    showStatus(status, 'チームコードを入力してください', 'err');
+    return;
+  }
+  if (!rawUrl.includes('script.google.com/macros/s/')) {
+    showStatus(status, '⚠️ GAS受注URL（script.google.com/macros/s/...）を入力してください', 'err');
+    return;
+  }
+
+  // GAS URL に action と code を付加
+  const baseUrl = rawUrl.split('?')[0];
+  const gasUrl  = baseUrl + '?action=getTeamData&code=' + encodeURIComponent(codeInput);
+
+  btn.disabled = true;
+  showStatus(status, '読み込み中...', 'loading');
+
+  try {
+    const res  = await fetch(gasUrl);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    const { team, products: prods } = data;
+
+    // フォームに反映
+    document.getElementById('f-code').value      = team.code       || '';
+    document.getElementById('f-teamname').value  = team.teamName   || '';
+    document.getElementById('f-clientname').value = team.clientName || '';
+    document.getElementById('f-logo').value      = team.logo       || '';
+    document.getElementById('f-gas').value       = team.gasUrl     || rawUrl.split('?')[0];
+    document.getElementById('f-hint').value      = team.hint       || '';
+
+    // カラー
+    if (team.main)   { document.getElementById('c-main').value   = team.main;   document.getElementById('ct-main').value   = team.main;   }
+    if (team.dark)   { document.getElementById('c-dark').value   = team.dark;   document.getElementById('ct-dark').value   = team.dark;   }
+    if (team.accent) { document.getElementById('c-accent').value = team.accent; document.getElementById('ct-accent').value = team.accent; }
+
+    // 商品
+    products = (prods || []).map(p => ({
+      itemCode: p.itemCode || '',
+      name:     p.name     || '',
+      price:    p.price    || '',
+      sizes:    Array.isArray(p.sizes) ? p.sizes.join(',') : (p.sizes || ''),
+      img:      p.img      || '',
+      category: p.category || '',
+    }));
+    renderProducts();
+    schedulePreview();
+
+    showStatus(status, `✓ 読み込み完了！ チーム: ${team.teamName} / 商品: ${prods.length}件`, 'ok');
+    toast(`✓ ${team.teamName} を読み込みました`, 'ok');
+
+    // ワークフローを更新
+    document.getElementById('wf-3').classList.remove('active');
+    document.getElementById('wf-3').classList.add('done');
+    document.getElementById('wf-3').querySelector('.step-num').textContent = '✓';
+    document.getElementById('wf-4').classList.remove('active');
+    document.getElementById('wf-4').classList.add('done');
+    document.getElementById('wf-4').querySelector('.step-num').textContent = '✓';
+    document.getElementById('wf-5').classList.add('active');
+
+  } catch (err) {
+    showStatus(status, `エラー: ${err.message}`, 'err');
+    toast('読み込みに失敗しました', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className   = `import-status ${type}`;
+}
+
+// ─── CLIENT MANAGEMENT ─────────────────────────
+function saveClient() {
+  const cfg = readForm();
+  if (!cfg.code) { toast('チームコードを入力してください', 'err'); return; }
+
+  const existIdx = clients.findIndex(c => c.code === cfg.code);
+  if (existIdx >= 0) {
+    clients[existIdx] = { ...cfg, savedAt: new Date().toISOString() };
+    activeIdx = existIdx;
+  } else {
+    clients.push({ ...cfg, savedAt: new Date().toISOString() });
+    activeIdx = clients.length - 1;
+  }
+
+  saveClients();
+  renderClientTabs();
+  toast(`✓ ${cfg.code} を保存しました`, 'ok');
+}
+
+function loadClientByIndex(idx) {
+  activeIdx = idx;
+  const c   = clients[idx];
+  document.getElementById('f-code').value      = c.code       || '';
+  document.getElementById('f-teamname').value  = c.teamname   || '';
+  document.getElementById('f-clientname').value= c.clientname || '';
+  document.getElementById('f-subtitle').value  = c.subtitle   || '';
+  document.getElementById('f-logo').value      = c.logo       || '';
+  document.getElementById('f-gas').value       = c.gas        || '';
+  document.getElementById('f-hint').value      = c.hint       || '';
+
+  const setColor = (name, val) => {
+    if (!val) return;
+    document.getElementById(`c-${name}`).value  = val;
+    document.getElementById(`ct-${name}`).value = val;
+  };
+  setColor('main',   c.main);
+  setColor('dark',   c.dark);
+  setColor('accent', c.accent);
+
+  products = c.products ? JSON.parse(JSON.stringify(c.products)) : [];
+  renderProducts();
+  renderClientTabs();
+  schedulePreview();
+}
+
+function renderClientTabs() {
+  const tabs = document.getElementById('client-tabs');
+  tabs.innerHTML = clients.map((c, i) => `
+    <div class="c-tab ${i === activeIdx ? 'active' : ''}" onclick="loadClientByIndex(${i})">${c.code || c.teamname || `#${i+1}`}</div>
+  `).join('') + `<div class="c-tab c-tab-new" onclick="newClient()">＋ 新規</div>`;
+}
+
+function newClient() {
+  activeIdx = -1;
+  products  = [];
+  setFormDefaults();
+  renderProducts();
+  renderClientTabs();
+  schedulePreview();
+  document.getElementById('import-url').value = '';
+  document.getElementById('import-status').textContent = '';
+  toast('新規得意先モードです', 'ok');
+}
+
+function saveClients() {
+  try { localStorage.setItem('lotus_clients_v2', JSON.stringify(clients)); } catch(e) {}
+}
+
+function loadClients() {
+  try {
+    const d = JSON.parse(localStorage.getItem('lotus_clients_v2') || '[]');
+    clients = Array.isArray(d) ? d : [];
+  } catch(e) { clients = []; }
+}
+
+// ─── FORM READ ─────────────────────────────────
+function readForm() {
+  return {
+    clientname: document.getElementById('f-clientname').value.trim(),
+    code:       document.getElementById('f-code').value.trim().toUpperCase(),
+    teamname:   document.getElementById('f-teamname').value.trim(),
+    subtitle:   document.getElementById('f-subtitle').value.trim(),
+    logo:       document.getElementById('f-logo').value.trim(),
+    gas:        document.getElementById('f-gas').value.trim(),
+    hint:       document.getElementById('f-hint').value.trim(),
+    main:       document.getElementById('ct-main').value || '#C0141E',
+    dark:       document.getElementById('ct-dark').value || '#9E0F18',
+    accent:     document.getElementById('ct-accent').value || '#ffffff',
+    products:   JSON.parse(JSON.stringify(products)),
+  };
+}
+
+function setFormDefaults() {
+  ['f-clientname','f-code','f-teamname','f-subtitle','f-logo','f-gas','f-hint'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  [['c-main','ct-main','#C0141E'],['c-dark','ct-dark','#9E0F18'],['c-accent','ct-accent','#ffffff']].forEach(([c,ct,v]) => {
+    document.getElementById(c).value  = v;
+    document.getElementById(ct).value = v;
+  });
+}
+
+// ─── PREVIEW ───────────────────────────────────
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updatePreview, 400);
+}
+
+function updatePreview() {
+  const cfg  = readForm();
+  const html = buildHTML(cfg);
+  const fr   = document.getElementById('preview-frame');
+  fr.srcdoc  = html;
+
+  document.getElementById('prev-prod-count').textContent = products.length;
+  document.getElementById('prev-code').textContent = cfg.code || '—';
+}
+
+// ─── HTML GENERATOR ────────────────────────────
+function buildHTML(cfg) {
+  const prods = cfg.products.map((p, i) => {
+    const sizes = p.sizes ? p.sizes.split(',').map(s => s.trim()).filter(Boolean) : ['フリーサイズ'];
+    return `{id:${i+1},itemCode:${JSON.stringify(p.itemCode||'')},name:${JSON.stringify(p.name)},price:${Number(p.price)||0},sizes:${JSON.stringify(sizes)},img:${JSON.stringify(p.img)},category:${JSON.stringify(p.category||'')}}`;
+  }).join(',\n  ');
+
+  const code     = cfg.code     || 'TEAM';
+  const teamname = cfg.teamname || cfg.clientname || 'TEAM';
+  const subtitle = cfg.subtitle || '';
+  const logo     = cfg.logo     || '';
+  const gas      = cfg.gas      || 'https://script.google.com/macros/s/PASTE_YOUR_GAS_URL/exec';
+  const hint     = cfg.hint     || `チームコードは担当者にご確認ください`;
+  const main     = cfg.main     || '#C0141E';
+  const dark     = cfg.dark     || '#9E0F18';
+  const accent   = cfg.accent   || '#ffffff';
+
+  // 生成されるWebアプリHTML
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>${teamname} STORE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:${main};--navy2:${dark};--gold:${accent};
+  --bg:#F7F5F5;--card:#fff;--border:rgba(0,0,0,0.1);
+  --text:#1A0A0A;--muted:#7A6060;
+}
+html,body{height:100%;font-family:'Helvetica Neue',Arial,'Hiragino Kaku Gothic ProN',sans-serif;background:var(--bg);color:var(--text);}
+body{max-width:430px;margin:0 auto;}
+.screen{display:none;flex-direction:column;min-height:100vh;}
+.screen.active{display:flex;}
+#s-access{background:var(--navy);}
+.access-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 28px;}
+.team-badge{text-align:center;margin-bottom:44px;}
+.tb-tag{font-size:11px;letter-spacing:0.35em;color:var(--gold);text-transform:uppercase;margin-bottom:10px;opacity:0.85;}
+.tb-name{font-size:30px;font-weight:800;color:#fff;letter-spacing:-0.02em;}
+.tb-sub{font-size:12px;color:rgba(255,255,255,0.3);margin-top:6px;letter-spacing:0.12em;}
+.a-card{width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.14);border-radius:18px;padding:28px 24px;}
+.a-label{font-size:11px;letter-spacing:0.15em;color:rgba(255,255,255,0.45);text-transform:uppercase;display:block;margin-bottom:12px;}
+.a-input{width:100%;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:16px;font-size:22px;letter-spacing:0.6em;color:#fff;text-align:center;text-transform:uppercase;outline:none;margin-bottom:6px;}
+.a-input:focus{border-color:#fff;}
+.a-err{font-size:12px;color:#EF9F9F;text-align:center;height:20px;line-height:20px;margin-bottom:6px;}
+.btn-gold{width:100%;background:#fff;color:var(--navy);border:none;border-radius:10px;padding:16px;font-size:15px;font-weight:800;letter-spacing:0.05em;cursor:pointer;}
+.demo-hint{margin-top:18px;font-size:11px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.7;}
+.top-bar{background:var(--navy);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:50;}
+.bar-logo{font-size:15px;font-weight:800;color:#fff;}
+.bar-cart{background:rgba(255,255,255,0.12);border:none;border-radius:8px;padding:7px 13px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;}
+.badge{background:#fff;color:var(--navy);border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.back-link{font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;}
+/* Profile */
+#s-profile{background:var(--bg);}
+.profile-bar{background:var(--navy2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.who{font-size:12px;color:rgba(255,255,255,0.55);}
+.who b{color:#fff;}
+.edit-link{font-size:11px;color:var(--gold);cursor:pointer;background:none;border:none;padding:0;}
+.form-body{flex:1;padding:22px 18px;overflow-y:auto;}
+.f-intro{font-size:16px;font-weight:800;margin-bottom:4px;}
+.f-sub{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.6;}
+.f-group{margin-bottom:20px;}
+.f-label{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px;}
+.f-input{width:100%;border:1px solid var(--border);border-radius:10px;padding:13px;font-size:15px;background:#fff;color:var(--text);outline:none;-webkit-appearance:none;}
+.f-input:focus{border-color:var(--navy);}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.f-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6;}
+.pay-opts{display:flex;gap:10px;margin-top:8px;}
+.pay-opt{flex:1;border:1px solid var(--border);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;background:#fff;transition:border-color 0.15s;}
+.pay-opt.sel{border-color:var(--navy);background:rgba(0,0,0,0.02);}
+.po-icon{font-size:22px;margin-bottom:5px;}
+.po-name{font-size:13px;font-weight:700;}
+.po-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.form-foot{padding:14px 18px;background:var(--bg);border-top:0.5px solid var(--border);flex-shrink:0;}
+/* Shop */
+#s-shop{background:var(--bg);}
+.shop-body{flex:1;overflow-y:auto;padding:14px;}
+.sec-label{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.products{display:flex;flex-direction:column;gap:10px;}
+.p-card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;display:flex;cursor:pointer;transition:transform 0.1s;}
+.p-card:active{transform:scale(0.98);}
+.p-thumb{width:90px;min-height:90px;flex-shrink:0;overflow:hidden;background:#E8E6E0;display:flex;align-items:center;justify-content:center;}
+.p-thumb img{width:100%;height:100%;object-fit:cover;}
+.no-img{font-size:26px;}
+.p-body{padding:13px;flex:1;display:flex;flex-direction:column;justify-content:center;}
+.p-itemcode{font-size:9px;font-family:monospace;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;}
+.p-name{font-size:14px;font-weight:700;line-height:1.3;}
+.p-sizes{font-size:11px;color:var(--muted);margin:3px 0 8px;}
+.p-footer{display:flex;align-items:center;justify-content:space-between;}
+.p-price{font-size:15px;font-weight:800;}
+/* Detail */
+#s-detail{background:var(--bg);}
+.detail-img{height:200px;background:#E8E6E0;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.detail-img img{width:100%;height:100%;object-fit:cover;}
+.detail-body{flex:1;overflow-y:auto;padding:18px;}
+.d-itemcode{font-size:11px;font-family:monospace;color:var(--muted);margin-bottom:4px;}
+.d-name{font-size:20px;font-weight:800;margin-bottom:4px;line-height:1.3;}
+.d-price{font-size:19px;font-weight:800;color:var(--navy);margin-bottom:22px;}
+.sz-label{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
+.sz-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;}
+.sz-btn{border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:var(--text);}
+.sz-btn.sel{background:var(--navy);color:#fff;border-color:var(--navy);}
+.qty-wrap{display:flex;align-items:center;border:1px solid var(--border);border-radius:12px;background:#fff;width:fit-content;margin-bottom:26px;}
+.q-btn{width:44px;height:44px;background:none;border:none;font-size:22px;cursor:pointer;}
+.q-num{width:40px;text-align:center;font-size:16px;font-weight:800;}
+.add-btn{width:100%;background:var(--navy);color:#fff;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:800;cursor:pointer;}
+.add-btn:disabled{opacity:0.3;cursor:default;}
+.need-sz{font-size:12px;color:var(--navy);margin-top:8px;text-align:center;display:none;}
+/* Cart */
+#s-cart{background:var(--bg);}
+.cart-body{flex:1;overflow-y:auto;padding:14px;}
+.empty-cart{text-align:center;padding:80px 20px;color:var(--muted);}
+.c-item{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:11px;}
+.c-thumb{width:52px;height:52px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#E8E6E0;display:flex;align-items:center;justify-content:center;}
+.c-thumb img{width:100%;height:100%;object-fit:cover;}
+.c-info{flex:1;min-width:0;}
+.c-name{font-size:13px;font-weight:700;line-height:1.3;}
+.c-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.c-right{text-align:right;flex-shrink:0;}
+.c-price{font-size:14px;font-weight:800;}
+.c-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;display:block;margin-top:5px;margin-left:auto;}
+.cart-foot{padding:14px 18px;border-top:0.5px solid var(--border);background:var(--bg);flex-shrink:0;}
+.total-row{display:flex;justify-content:space-between;font-size:17px;font-weight:800;margin-bottom:13px;}
+/* Confirm */
+#s-confirm{background:var(--bg);}
+.confirm-body{flex:1;overflow-y:auto;padding:18px 16px 36px;}
+.confirm-hero{background:var(--navy);border-radius:16px;padding:26px 22px;text-align:center;margin-bottom:18px;}
+.ch-tag{font-size:10px;letter-spacing:0.25em;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:8px;}
+.ch-title{font-size:16px;font-weight:800;color:#fff;}
+.ch-num{font-size:28px;font-weight:800;color:var(--gold);margin-top:7px;letter-spacing:-0.01em;}
+.conf-sec{background:var(--card);border:0.5px solid var(--border);border-radius:13px;padding:15px;margin-bottom:12px;}
+.cs-title{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.cs-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border);gap:8px;}
+.cs-row:last-child{border:none;padding-bottom:0;}
+.cs-row .label{color:var(--muted);flex-shrink:0;}
+.cs-row .val{font-weight:700;text-align:right;word-break:break-all;}
+.info-box{border-radius:11px;padding:14px;font-size:13px;line-height:1.7;margin-bottom:14px;white-space:pre-line;}
+.info-box.card{background:#FFF8E7;border:1px solid #D4A820;color:#7A5A00;}
+.info-box.bank{background:#EFF6FF;border:1px solid #93C5FD;color:#1E40AF;}
+.btn-outline{width:100%;background:none;color:var(--navy);border:1px solid var(--border);border-radius:11px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px;}
+.btn-navy{width:100%;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:15px;font-size:14px;font-weight:800;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ① アクセス -->
+<div class="screen active" id="s-access">
+  <div class="access-inner">
+    <div class="team-badge">
+      ${logo ? `<img src="${logo}" alt="${teamname}" style="width:100px;height:100px;object-fit:contain;margin-bottom:14px;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">` : ''}
+      <div class="tb-tag">${subtitle}</div>
+      <div class="tb-name">${teamname} STORE</div>
+      <div class="tb-sub">TEAM MEMBERS ONLY</div>
+    </div>
+    <div class="a-card">
+      <span class="a-label">チームコード</span>
+      <input class="a-input" id="code-in" type="text" maxlength="12"
+             placeholder="• • • • • •" autocomplete="off" autocapitalize="characters">
+      <div class="a-err" id="a-err">&nbsp;</div>
+      <button class="btn-gold" onclick="checkCode()">入 る</button>
+    </div>
+    <div class="demo-hint">${hint}</div>
+  </div>
+</div>
+
+<!-- ② プロフィール登録 -->
+<div class="screen" id="s-profile">
+  <div class="profile-bar">
+    <div class="who">チーム: <b>${teamname}</b></div>
+    <button class="edit-link" onclick="goTo('s-access')">ログアウト</button>
+  </div>
+  <div class="form-body">
+    <div class="f-intro">📋 注文者情報の入力</div>
+    <div class="f-sub">注文前に情報を入力してください。<br>請求書の送付先として使用します。</div>
+    <div class="f-group">
+      <label class="f-label">保護者名 <span style="color:var(--navy)">*</span></label>
+      <input class="f-input" id="p-parentname" type="text" placeholder="山田 花子">
+    </div>
+    <div class="f-row">
+      <div class="f-group">
+        <label class="f-label">選手名 <span style="color:var(--navy)">*</span></label>
+        <input class="f-input" id="p-name" type="text" placeholder="山田 太郎">
+      </div>
+      <div class="f-group">
+        <label class="f-label">学年・期</label>
+        <input class="f-input" id="p-grade" type="text" placeholder="2年">
+      </div>
+    </div>
+    <div class="f-row">
+      <div class="f-group">
+        <label class="f-label">背番号</label>
+        <input class="f-input" id="p-number" type="text" placeholder="21">
+      </div>
+      <div class="f-group">
+        <label class="f-label">電話番号</label>
+        <input class="f-input" id="p-phone" type="tel" placeholder="090-0000-0000">
+      </div>
+    </div>
+    <div class="f-group">
+      <label class="f-label">メールアドレス <span style="color:var(--navy)">*</span></label>
+      <input class="f-input" id="p-email" type="email" placeholder="example@gmail.com">
+      <div class="f-hint">請求書をこのアドレスに送付します</div>
+    </div>
+    <div class="f-group">
+      <label class="f-label">お支払い方法</label>
+      <div class="pay-opts">
+        <div class="pay-opt sel" id="pay-card" onclick="selectPay('card')">
+          <div class="po-icon">💳</div>
+          <div class="po-name">カード</div>
+          <div class="po-sub">Square決済</div>
+        </div>
+        <div class="pay-opt" id="pay-bank" onclick="selectPay('bank')">
+          <div class="po-icon">🏦</div>
+          <div class="po-name">振込</div>
+          <div class="po-sub">銀行振込</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="form-foot">
+    <button class="btn-navy" onclick="goShop()" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;">ショップへ進む →</button>
+  </div>
+</div>
+
+<!-- ③ ショップ -->
+<div class="screen" id="s-shop">
+  <div class="top-bar">
+    <span class="bar-logo">${teamname} STORE</span>
+    <button class="bar-cart" onclick="goTo('s-cart')">
+      🛒 <span id="cart-count">0</span>点
+      <span class="badge" id="cart-badge" style="display:none">!</span>
+    </button>
+  </div>
+  <div class="shop-body">
+    <div class="sec-label">商品一覧</div>
+    <div class="products" id="product-list"></div>
+  </div>
+</div>
+
+<!-- ④ 商品詳細 -->
+<div class="screen" id="s-detail">
+  <div class="top-bar">
+    <span class="back-link" onclick="goTo('s-shop')">← 戻る</span>
+    <span class="bar-logo">${teamname} STORE</span>
+    <button class="bar-cart" onclick="goTo('s-cart')">🛒 <span id="cart-count2">0</span>点</button>
+  </div>
+  <div class="detail-img" id="detail-img"></div>
+  <div class="detail-body">
+    <div class="d-itemcode" id="d-itemcode"></div>
+    <div class="d-name" id="d-name"></div>
+    <div class="d-price" id="d-price"></div>
+    <span class="sz-label">サイズを選択</span>
+    <div class="sz-row" id="sz-row"></div>
+    <span class="sz-label">数量</span>
+    <div class="qty-wrap">
+      <button class="q-btn" onclick="changeQty(-1)">−</button>
+      <span class="q-num" id="q-num">1</span>
+      <button class="q-btn" onclick="changeQty(1)">＋</button>
+    </div>
+    <button class="add-btn" id="add-btn" onclick="addToCart()">カートに追加</button>
+    <div class="need-sz" id="need-sz">サイズを選択してください</div>
+  </div>
+</div>
+
+<!-- ⑤ カート -->
+<div class="screen" id="s-cart">
+  <div class="top-bar">
+    <span class="back-link" onclick="goTo('s-shop')">← 戻る</span>
+    <span class="bar-logo">カート</span>
+    <span style="width:60px;"></span>
+  </div>
+  <div class="cart-body" id="cart-body"></div>
+  <div class="cart-foot">
+    <div class="total-row">
+      <span>合計</span>
+      <span id="cart-total">¥0</span>
+    </div>
+    <button class="btn-navy" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:11px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;" onclick="goConfirm()">注文内容を確認 →</button>
+  </div>
+</div>
+
+<!-- ⑥ 確認・完了 -->
+<div class="screen" id="s-confirm">
+  <div class="top-bar">
+    <span class="back-link" id="back-from-confirm" onclick="goTo('s-cart')">← 戻る</span>
+    <span class="bar-logo">確認</span>
+    <span style="width:60px;"></span>
+  </div>
+  <div class="confirm-body">
+    <div id="confirm-content"></div>
+  </div>
+</div>
+
+<script>
+const TEAM_CODE = '${code}';
+const GAS_URL   = '${gas}';
+
+const PRODUCTS = [
+  ${prods}
+];
+
+let profile  = null;
+let cart     = [];
+let selProd  = null;
+let selSize  = null;
+let selQty   = 1;
+let ordDone  = false;
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function checkCode() {
+  const v = document.getElementById('code-in').value.trim().toUpperCase();
+  if (v === TEAM_CODE) {
+    document.getElementById('a-err').textContent = '';
+    goTo('s-profile');
+  } else {
+    document.getElementById('a-err').textContent = 'コードが違います';
+  }
+}
+document.getElementById('code-in').addEventListener('keydown', e => { if(e.key==='Enter') checkCode(); });
+
+let selectedPay = 'card';
+function selectPay(type) {
+  selectedPay = type;
+  document.getElementById('pay-card').classList.toggle('sel', type==='card');
+  document.getElementById('pay-bank').classList.toggle('sel', type==='bank');
+}
+
+function goShop() {
+  const parentName = document.getElementById('p-parentname').value.trim();
+  const name  = document.getElementById('p-name').value.trim();
+  const email = document.getElementById('p-email').value.trim();
+  if (!parentName || !name || !email) {
+    alert('保護者名・選手名・メールアドレスは必須です');
+    return;
+  }
+  profile = {
+    parentName,
+    name,
+    grade:  document.getElementById('p-grade').value.trim(),
+    number: document.getElementById('p-number').value.trim(),
+    phone:  document.getElementById('p-phone').value.trim(),
+    email,
+    pay: selectedPay,
+  };
+  renderShop();
+  goTo('s-shop');
+}
+
+function renderShop() {
+  const list = document.getElementById('product-list');
+  list.innerHTML = PRODUCTS.map(p => \`
+    <div class="p-card" onclick="openDetail(\${p.id})">
+      <div class="p-thumb">
+        \${p.img ? \`<img src="\${p.img}" alt="\${p.name}" onerror="this.parentNode.innerHTML='<span class=no-img>👕</span>'">\` : '<span class="no-img">👕</span>'}
+      </div>
+      <div class="p-body">
+        \${p.itemCode ? \`<div class="p-itemcode">\${p.itemCode}</div>\` : ''}
+        <div class="p-name">\${p.name}</div>
+        <div class="p-sizes">\${p.sizes.join(' / ')}</div>
+        <div class="p-footer">
+          <div class="p-price">¥\${p.price.toLocaleString()}</div>
+          <span style="color:var(--muted);font-size:18px;">›</span>
+        </div>
+      </div>
+    </div>
+  \`).join('');
+}
+
+function openDetail(id) {
+  selProd = PRODUCTS.find(p => p.id === id);
+  selSize = null;
+  selQty  = 1;
+  if (!selProd) return;
+
+  document.getElementById('detail-img').innerHTML = selProd.img
+    ? \`<img src="\${selProd.img}" alt="\${selProd.name}" onerror="this.style.display='none'">\`
+    : '<span style="font-size:56px;">👕</span>';
+  document.getElementById('d-itemcode').textContent = selProd.itemCode ? \`品番: \${selProd.itemCode}\` : '';
+  document.getElementById('d-name').textContent  = selProd.name;
+  document.getElementById('d-price').textContent = '¥' + selProd.price.toLocaleString();
+  document.getElementById('q-num').textContent   = 1;
+  document.getElementById('need-sz').style.display = 'none';
+
+  const szRow = document.getElementById('sz-row');
+  szRow.innerHTML = selProd.sizes.map(s => \`
+    <button class="sz-btn" onclick="selectSize('\${s}')">\${s}</button>
+  \`).join('');
+
+  goTo('s-detail');
+}
+
+function selectSize(s) {
+  selSize = s;
+  document.querySelectorAll('.sz-btn').forEach(b => b.classList.toggle('sel', b.textContent === s));
+  document.getElementById('need-sz').style.display = 'none';
+}
+
+function changeQty(d) {
+  selQty = Math.max(1, selQty + d);
+  document.getElementById('q-num').textContent = selQty;
+}
+
+function addToCart() {
+  if (!selSize) {
+    document.getElementById('need-sz').style.display = 'block';
+    return;
+  }
+  const existing = cart.find(i => i.prodId === selProd.id && i.size === selSize);
+  if (existing) {
+    existing.qty += selQty;
+  } else {
+    cart.push({
+      prodId:   selProd.id,
+      itemCode: selProd.itemCode || '',
+      name:     selProd.name,
+      size:     selSize,
+      qty:      selQty,
+      price:    selProd.price,
+      img:      selProd.img,
+    });
+  }
+  updateCartCount();
+  goTo('s-shop');
+}
+
+function updateCartCount() {
+  const total = cart.reduce((s,i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent  = total;
+  document.getElementById('cart-count2').textContent = total;
+  const badge = document.getElementById('cart-badge');
+  if (badge) badge.style.display = total > 0 ? 'flex' : 'none';
+}
+
+function renderCart() {
+  const body = document.getElementById('cart-body');
+  if (cart.length === 0) {
+    body.innerHTML = '<div class="empty-cart"><div class="empty-icon" style="font-size:38px;margin-bottom:10px;">🛒</div><div style="font-size:14px;color:var(--muted);">カートが空です</div></div>';
+    document.getElementById('cart-total').textContent = '¥0';
+    return;
+  }
+  body.innerHTML = cart.map((item, i) => \`
+    <div class="c-item">
+      <div class="c-thumb">
+        \${item.img ? \`<img src="\${item.img}" alt="\${item.name}" onerror="this.parentNode.innerHTML='<span>👕</span>'">\` : '<span>👕</span>'}
+      </div>
+      <div class="c-info">
+        \${item.itemCode ? \`<div style="font-size:9px;font-family:monospace;color:var(--muted);">\${item.itemCode}</div>\` : ''}
+        <div class="c-name">\${item.name}</div>
+        <div class="c-sub">\${item.size} × \${item.qty}</div>
+      </div>
+      <div class="c-right">
+        <div class="c-price">¥\${(item.price * item.qty).toLocaleString()}</div>
+        <button class="c-del" onclick="removeCart(\${i})">×</button>
+      </div>
+    </div>
+  \`).join('');
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cart-total').textContent = '¥' + total.toLocaleString();
+}
+
+function removeCart(i) {
+  cart.splice(i, 1);
+  renderCart();
+  updateCartCount();
+}
+
+function goConfirm() {
+  if (cart.length === 0) { alert('カートが空です'); return; }
+  renderCart();
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const now   = new Date();
+  const ordNum = TEAM_CODE + '-' + now.getFullYear().toString().slice(2)
+    + String(now.getMonth()+1).padStart(2,'0')
+    + String(now.getDate()).padStart(2,'0')
+    + '-' + String(Math.floor(Math.random()*10000)).padStart(4,'0');
+
+  const itemRows = cart.map(item => \`
+    <div class="cs-row">
+      <span class="label">\${item.name}<br><small style="font-size:10px;opacity:0.6;">\${item.itemCode ? item.itemCode + ' / ' : ''}\${item.size}</small></span>
+      <span class="val">×\${item.qty}　¥\${(item.price*item.qty).toLocaleString()}</span>
+    </div>
+  \`).join('');
+
+  const payBox = profile.pay === 'card'
+    ? '<div class="info-box card">💳 Square決済リンクを後ほどメールでお送りします。</div>'
+    : '<div class="info-box bank">🏦 振込先情報を後ほどメールでお送りします。</div>';
+
+  document.getElementById('confirm-content').innerHTML = \`
+    <div class="confirm-hero">
+      <div class="ch-tag">ご注文内容の確認</div>
+      <div class="ch-title">\${profile.name} 選手</div>
+      <div class="ch-num">\${ordNum}</div>
+    </div>
+    <div class="conf-sec">
+      <div class="cs-title">注文者情報</div>
+      <div class="cs-row"><span class="label">保護者名</span><span class="val">\${profile.parentName}</span></div>
+      <div class="cs-row"><span class="label">選手名</span><span class="val">\${profile.name}</span></div>
+      <div class="cs-row"><span class="label">学年/期</span><span class="val">\${profile.grade || '—'}</span></div>
+      <div class="cs-row"><span class="label">背番号</span><span class="val">\${profile.number || '—'}</span></div>
+      <div class="cs-row"><span class="label">メール</span><span class="val">\${profile.email}</span></div>
+    </div>
+    <div class="conf-sec">
+      <div class="cs-title">注文内容</div>
+      \${itemRows}
+      <div class="cs-row" style="margin-top:8px;font-size:15px;font-weight:800;">
+        <span>合計</span>
+        <span>¥\${total.toLocaleString()}</span>
+      </div>
+    </div>
+    \${payBox}
+    <button class="btn-navy" id="submit-btn" onclick="submitOrder('\${ordNum}', \${total})">
+      この内容で注文する
+    </button>
+  \`;
+  document.getElementById('back-from-confirm').style.display = 'inline';
+  goTo('s-confirm');
+}
+
+async function submitOrder(ordNum, total) {
+  if (ordDone) return;
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  try {
+    const body = { ordNum, profile, cart, total };
+    await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      mode: 'no-cors',
+    });
+
+    ordDone = true;
+    document.getElementById('back-from-confirm').style.display = 'none';
+    document.getElementById('confirm-content').innerHTML = \`
+      <div style="text-align:center;padding:60px 20px;">
+        <div style="font-size:56px;margin-bottom:18px;">✅</div>
+        <div style="font-size:20px;font-weight:800;margin-bottom:8px;">ご注文ありがとうございます！</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:24px;">
+          注文番号: <b>\${ordNum}</b><br>
+          確認メールを \${profile.email} に送信しました。<br>
+          請求書は締切後にメールでお送りします。
+        </div>
+        <div style="background:#f0f4f8;border-radius:12px;padding:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+          合計金額: ¥\${total.toLocaleString()}<br>
+          お支払い方法のご案内を別途お送りします。
+        </div>
+      </div>
+    \`;
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'もう一度試す';
+    alert('送信に失敗しました。時間をおいて再試行してください。');
+  }
+}
+
+// カート画面に遷移するたびに再描画
+const cartObserver = new MutationObserver(() => {
+  if (document.getElementById('s-cart').classList.contains('active')) renderCart();
+});
+cartObserver.observe(document.getElementById('s-cart'), { attributeFilter: ['class'] });
+<\/script>
+</body>
+</html>`;
+}
+
+// ─── DOWNLOAD ──────────────────────────────────
+function generateAndDownload() {
+  const cfg = readForm();
+  if (!cfg.code)     { toast('チームコードを入力してください', 'err'); return; }
+  if (!cfg.teamname) { toast('チーム名を入力してください', 'err'); return; }
+  if (!cfg.gas)      { toast('GAS受注URLを入力してください', 'err'); return; }
+  if (cfg.products.length === 0) { toast('商品を1つ以上追加してください', 'err'); return; }
+
+  const html = buildHTML(cfg);
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${cfg.code}_STORE.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`✓ ${cfg.code}_STORE.html をダウンロードしました`, 'ok');
+}
+
+// ─── UTILITIES ─────────────────────────────────
+function esc(v) {
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast show ${type}`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+// ページロード時にGAS URLを自動セット
+const GENERATOR_GAS_URL = 'https://script.google.com/macros/s/AKfycbzgON3EDRPdw3jWIZaHPO11L-HK4RkNDZ1d30kzdvTRdMPCIQ_lH4vUBwMAMG3eIg_Q/exec'; // ← デプロイ後のURLをここに貼り付けてください
+window.addEventListener('DOMContentLoaded', function() {
+  if (GENERATOR_GAS_URL) {
+    const el = document.getElementById('import-url');
+    if (el && !el.value) el.value = GENERATOR_GAS_URL;
+  }
+});
+</script>
+</body>
