@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>サンプルチーム STORE</title>
+<style>
+  :root{--main:#C0141E;--sub:#9E0F18;--accent:#ffffff;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#f5f5f5;color:#222;}
+  /* ログイン画面 */
+  #login-screen{min-height:100vh;background:var(--main);display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-box{background:rgba(0,0,0,.35);border-radius:16px;padding:40px 32px;max-width:380px;width:100%;text-align:center;}
+  .team-logo{width:80px;height:80px;object-fit:contain;border-radius:50%;background:#fff;padding:6px;margin-bottom:16px;}
+  .team-name{color:#fff;font-size:22px;font-weight:800;letter-spacing:.1em;margin-bottom:4px;}
+  .team-sub{color:rgba(255,255,255,.7);font-size:11px;letter-spacing:.2em;margin-bottom:24px;}
+  .hint-text{color:rgba(255,255,255,.6);font-size:12px;margin-bottom:16px;}
+  .deadline{color:rgba(255,255,255,.8);font-size:12px;margin-bottom:16px;}
+  .login-input{width:100%;padding:14px 16px;border-radius:8px;border:2px solid transparent;font-size:15px;text-align:center;letter-spacing:.15em;outline:none;transition:.2s;}
+  .login-input:focus{border-color:rgba(255,255,255,.6);}
+  .login-btn{width:100%;margin-top:12px;padding:15px;background:#fff;color:var(--main);border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s;}
+  .login-btn:hover{opacity:.85;}
+  .login-err{color:#ffcccc;font-size:13px;margin-top:10px;min-height:18px;}
+  /* メイン画面 */
+  #main-screen{display:none;}
+  .header{background:var(--main);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+  .header-logo{width:36px;height:36px;object-fit:contain;border-radius:50%;background:#fff;padding:3px;}
+  .header-title{font-size:16px;font-weight:700;flex:1;}
+  .cart-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;position:relative;}
+  .cart-badge{position:absolute;top:-6px;right:-6px;background:#ff5252;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  /* 商品一覧 */
+  .products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;padding:16px;}
+  .product-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;transition:.2s;}
+  .product-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+  .product-img{width:100%;aspect-ratio:1;object-fit:cover;background:#f0f0f0;}
+  .product-info{padding:10px 12px 12px;}
+  .product-category{font-size:10px;color:#888;margin-bottom:4px;}
+  .product-name{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:6px;}
+  .product-price{font-size:15px;font-weight:700;color:var(--main);}
+  .product-price-sub{font-size:10px;color:#888;}
+  /* カート */
+  #cart-panel{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.15);transform:translateY(100%);transition:.3s;z-index:200;max-height:85vh;overflow-y:auto;}
+  #cart-panel.open{transform:translateY(0);}
+  .cart-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;}
+  .cart-title{font-size:16px;font-weight:700;flex:1;}
+  .cart-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;}
+  .cart-item{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f5f5f5;}
+  .cart-item-img{width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f0f0f0;}
+  .cart-item-info{flex:1;}
+  .cart-item-name{font-size:13px;font-weight:600;}
+  .cart-item-detail{font-size:11px;color:#888;margin-top:2px;}
+  .cart-item-price{font-size:14px;font-weight:700;color:var(--main);}
+  .cart-item-remove{background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;}
+  .cart-total{padding:16px 20px;display:flex;justify-content:space-between;align-items:center;background:#f8f8f8;}
+  .cart-total-label{font-size:14px;color:#666;}
+  .cart-total-price{font-size:20px;font-weight:800;color:var(--main);}
+  .checkout-btn{width:calc(100% - 40px);margin:0 20px 20px;padding:16px;background:var(--main);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;}
+  /* 商品詳細モーダル */
+  #modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;}
+  #modal{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:90vh;overflow-y:auto;z-index:301;transform:translateY(100%);transition:.3s;}
+  #modal.open{transform:translateY(0);}
+  .modal-img{width:100%;aspect-ratio:1;object-fit:cover;background:#f0f0f0;}
+  .modal-body{padding:20px;}
+  .modal-category{font-size:11px;color:#888;margin-bottom:4px;}
+  .modal-name{font-size:18px;font-weight:800;margin-bottom:4px;}
+  .modal-maker{font-size:12px;color:#888;margin-bottom:12px;}
+  .modal-price{font-size:22px;font-weight:800;color:var(--main);margin-bottom:16px;}
+  .modal-label{font-size:12px;color:#555;font-weight:600;margin-bottom:6px;}
+  .size-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .size-btn{padding:8px 14px;border:2px solid #ddd;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;transition:.2s;}
+  .size-btn.selected{border-color:var(--main);background:var(--main);color:#fff;}
+  .qty-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+  .qty-btn{width:36px;height:36px;border:2px solid #ddd;border-radius:6px;background:#fff;font-size:18px;cursor:pointer;}
+  .qty-num{font-size:18px;font-weight:700;min-width:24px;text-align:center;}
+  .add-cart-btn{width:100%;padding:16px;background:var(--main);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+  .modal-close{width:100%;padding:12px;background:#f0f0f0;color:#555;border:none;border-radius:10px;font-size:14px;cursor:pointer;}
+  /* 注文フォーム */
+  #order-screen{display:none;min-height:100vh;background:#f5f5f5;}
+  .order-header{background:var(--main);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;}
+  .back-btn{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;}
+  .order-form{padding:20px;}
+  .form-section{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;}
+  .form-section-title{font-size:14px;font-weight:700;color:var(--main);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--main);}
+  .form-row{margin-bottom:12px;}
+  .form-label{font-size:12px;color:#555;margin-bottom:4px;display:block;}
+  .form-input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;}
+  .form-input:focus{border-color:var(--main);}
+  .order-items{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;}
+  .order-summary{background:#fff;border-radius:12px;padding:16px;margin-bottom:20px;}
+  .summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;}
+  .summary-total{font-size:18px;font-weight:800;color:var(--main);}
+  .submit-btn{width:100%;padding:16px;background:var(--main);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;}
+  /* 完了画面 */
+  #done-screen{display:none;min-height:100vh;background:var(--main);display:flex;align-items:center;justify-content:center;}
+  .done-box{text-align:center;padding:40px 20px;color:#fff;}
+  .done-icon{font-size:64px;margin-bottom:16px;}
+  .done-title{font-size:24px;font-weight:800;margin-bottom:8px;}
+  .done-msg{font-size:14px;opacity:.8;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<div id="login-screen">
+  <div class="login-box">
+    
+    <div class="team-name">サンプルチーム STORE</div>
+    <div class="team-sub">TEAM MEMBERS ONLY</div>
+    
+    <input type="password" id="code-input" class="login-input" placeholder="チームコード">
+    <button class="login-btn" onclick="doLogin()">入 る</button>
+    <div class="login-err" id="login-err"></div>
+    <p class="hint-text">チームコードは担当者にご確認ください</p>
+  </div>
+</div>
+
+<!-- メイン商品一覧 -->
+<div id="main-screen">
+  <div class="header">
+    
+    <div class="header-title">サンプルチーム STORE</div>
+    <button class="cart-btn" onclick="openCart()">
+      🛒 カート
+      <span class="cart-badge" id="cart-badge" style="display:none">0</span>
+    </button>
+  </div>
+  <div class="products-grid" id="products-grid"></div>
+</div>
+
+<!-- カートパネル -->
+<div id="cart-panel">
+  <div class="cart-header">
+    <div class="cart-title">🛒 カート</div>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div id="cart-items"></div>
+  <div class="cart-total">
+    <span class="cart-total-label">合計（税込）</span>
+    <span class="cart-total-price" id="cart-total">¥0</span>
+  </div>
+  <button class="checkout-btn" onclick="goToOrder()">注文手続きへ →</button>
+</div>
+
+<!-- 商品詳細モーダル -->
+<div id="modal-overlay" onclick="closeModal()"></div>
+<div id="modal">
+  <img id="modal-img" class="modal-img" src="" alt="">
+  <div class="modal-body">
+    <div class="modal-category" id="modal-category"></div>
+    <div class="modal-name" id="modal-name"></div>
+    <div class="modal-maker" id="modal-maker"></div>
+    <div class="modal-price" id="modal-price"></div>
+    <div class="modal-label">サイズ</div>
+    <div class="size-grid" id="size-grid"></div>
+    <div class="modal-label">数量</div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <span class="qty-num" id="qty-num">1</span>
+      <button class="qty-btn" onclick="changeQty(1)">＋</button>
+    </div>
+    <button class="add-cart-btn" onclick="addToCart()">カートに追加</button>
+    <button class="modal-close" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- 注文フォーム -->
+<div id="order-screen">
+  <div class="order-header">
+    <button class="back-btn" onclick="backToMain()">←</button>
+    <div style="font-size:16px;font-weight:700;color:#fff;">注文情報の入力</div>
+  </div>
+  <div class="order-form">
+    <div class="form-section">
+      <div class="form-section-title">👤 お客様情報</div>
+      <div class="form-row"><label class="form-label">保護者名 *</label><input class="form-input" id="f-parent" placeholder="山田 太郎"></div>
+      <div class="form-row"><label class="form-label">選手名 *</label><input class="form-input" id="f-name" placeholder="山田 花子"></div>
+      <div class="form-row"><label class="form-label">学年・期</label><input class="form-input" id="f-grade" placeholder="3年 / 26期"></div>
+      <div class="form-row"><label class="form-label">背番号</label><input class="form-input" id="f-number" placeholder="21"></div>
+      <div class="form-row"><label class="form-label">メールアドレス *</label><input class="form-input" id="f-email" type="email" placeholder="example@email.com"></div>
+      <div class="form-row"><label class="form-label">電話番号</label><input class="form-input" id="f-phone" type="tel" placeholder="090-0000-0000"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">💳 お支払い方法</div>
+      <select class="form-input" id="f-pay">
+        <option value="bank">銀行振込</option>
+        <option value="cash">現金</option>
+        <option value="paypay">PayPay</option>
+      </select>
+    </div>
+    <div class="order-items">
+      <div class="form-section-title">🛒 ご注文内容</div>
+      <div id="order-items-list"></div>
+    </div>
+    <div class="order-summary">
+      <div class="summary-row"><span>小計</span><span id="summary-subtotal">¥0</span></div>
+      <div class="summary-row" style="font-weight:800;font-size:16px;border-top:2px solid #eee;padding-top:8px;margin-top:4px;">
+        <span>合計（税込）</span><span class="summary-total" id="summary-total">¥0</span>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="submitOrder()">✅ 注文を確定する</button>
+  </div>
+</div>
+
+<!-- 完了画面 -->
+<div id="done-screen" style="display:none;">
+  <div class="done-box">
+    <div class="done-icon">🎉</div>
+    <div class="done-title">ご注文ありがとうございます！</div>
+    <div class="done-msg">ご登録のメールアドレスに<br>確認メールをお送りします。</div>
+  </div>
+</div>
+
+<script>
+const GAS_URL   = '';
+const TEAM_CODE = 'SAMPLE';
+const PRODUCTS  = [{"id":1,"banban":"00300-ACT","maker":"Glimmer","sku":"00300-ACT","name":"4.4オンス ドライTシャツ","color":"ライトイエロー","size":"S, M, L, LL","category":"","exPrice":0,"price":0,"image":"https://drive.google.com/file/d/1p2_SRsHSDX8Jlwfyykftszy5OOpB03Vi/view?usp=drive_link"},{"id":2,"banban":"00300-ACT","maker":"Glimmer","sku":"00300-ACT","name":"4.4オンス ドライTシャツ","color":"イエロー","size":"S, M, L, LL, 3L","category":"","exPrice":0,"price":0,"image":"isii"},{"id":3,"banban":"00300-ACT","maker":"Glimmer","sku":"00300-ACT","name":"4.4オンス ドライTシャツ","color":"オレンジ","size":"S, M, L","category":"","exPrice":0,"price":0,"image":""}];
+
+let cart     = [];
+let selProd  = null;
+let selSize  = '';
+let selQty   = 1;
+
+// ─── ログイン ────────────────────────────
+function doLogin() {
+  const v = document.getElementById('code-input').value.trim().toUpperCase();
+  if (v === TEAM_CODE) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display  = 'block';
+    renderProducts();
+  } else {
+    document.getElementById('login-err').textContent = 'チームコードが正しくありません';
+  }
+}
+document.getElementById('code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+// ─── 商品一覧 ───────────────────────────
+function renderProducts() {
+  const grid = document.getElementById('products-grid');
+  grid.innerHTML = PRODUCTS.map(p => `
+    <div class="product-card" onclick="openModal(${p.id})">
+      <img class="product-img" src="${p.image || ''}" alt="${p.name}"
+           onerror="this.style.background='#e8e8e8'">
+      <div class="product-info">
+        <div class="product-category">${p.category || ''}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">¥${p.price.toLocaleString()}<span class="product-price-sub">（税込）</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── 商品詳細モーダル ────────────────────
+function openModal(id) {
+  selProd = PRODUCTS.find(p => p.id === id);
+  selSize = '';
+  selQty  = 1;
+  if (!selProd) return;
+
+  document.getElementById('modal-img').src         = selProd.image || '';
+  document.getElementById('modal-category').textContent = selProd.category || '';
+  document.getElementById('modal-name').textContent    = selProd.name;
+  document.getElementById('modal-maker').textContent   = [selProd.maker, selProd.sku].filter(Boolean).join(' / ');
+  document.getElementById('modal-price').textContent   = '¥' + selProd.price.toLocaleString() + '（税込）';
+  document.getElementById('qty-num').textContent       = '1';
+
+  const sizes = selProd.size ? selProd.size.split(/[,、s]+/).map(s => s.trim()).filter(Boolean) : [];
+  document.getElementById('size-grid').innerHTML = sizes.length > 0
+    ? sizes.map(s => `<button class="size-btn" onclick="selectSize('${s}',this)">${s}</button>`).join('')
+    : '<span style="color:#888;font-size:13px;">サイズ指定なし</span>';
+
+  document.getElementById('modal-overlay').style.display = 'block';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+
+function selectSize(s, btn) {
+  selSize = s;
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function changeQty(d) {
+  selQty = Math.max(1, selQty + d);
+  document.getElementById('qty-num').textContent = selQty;
+}
+
+function addToCart() {
+  if (!selProd) return;
+  const sizes = selProd.size ? selProd.size.split(/[,、s]+/).map(s => s.trim()).filter(Boolean) : [];
+  if (sizes.length > 0 && !selSize) { alert('サイズを選択してください'); return; }
+
+  cart.push({ prod: selProd, size: selSize, qty: selQty });
+  updateCartBadge();
+  closeModal();
+  openCart();
+}
+
+// ─── カート ──────────────────────────────
+function updateCartBadge() {
+  const total = cart.reduce((s, i) => s + i.qty, 0);
+  const badge = document.getElementById('cart-badge');
+  badge.textContent    = total;
+  badge.style.display  = total > 0 ? 'flex' : 'none';
+}
+
+function openCart() {
+  renderCartItems();
+  document.getElementById('cart-panel').classList.add('open');
+}
+
+function closeCart() {
+  document.getElementById('cart-panel').classList.remove('open');
+}
+
+function renderCartItems() {
+  let total = 0;
+  document.getElementById('cart-items').innerHTML = cart.map((item, i) => {
+    const sub = item.prod.price * item.qty;
+    total += sub;
+    return `
+      <div class="cart-item">
+        <img class="cart-item-img" src="${item.prod.image || ''}" alt="" onerror="this.style.background='#eee'">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.prod.name}</div>
+          <div class="cart-item-detail">${item.size ? 'サイズ: ' + item.size + ' / ' : ''}数量: ${item.qty}</div>
+        </div>
+        <div class="cart-item-price">¥${sub.toLocaleString()}</div>
+        <button class="cart-item-remove" onclick="removeCart(${i})">🗑</button>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('cart-total').textContent = '¥' + total.toLocaleString();
+}
+
+function removeCart(i) {
+  cart.splice(i, 1);
+  updateCartBadge();
+  renderCartItems();
+}
+
+// ─── 注文フォーム ────────────────────────
+function goToOrder() {
+  if (cart.length === 0) { alert('カートが空です'); return; }
+  closeCart();
+
+  let subtotal = 0;
+  document.getElementById('order-items-list').innerHTML = cart.map(item => {
+    const sub = item.prod.price * item.qty;
+    subtotal += sub;
+    return `<div class="summary-row"><span>${item.prod.name} ${item.size ? item.size + ' ' : ''}× ${item.qty}</span><span>¥${sub.toLocaleString()}</span></div>`;
+  }).join('');
+  document.getElementById('summary-subtotal').textContent = '¥' + subtotal.toLocaleString();
+  document.getElementById('summary-total').textContent    = '¥' + subtotal.toLocaleString();
+
+  document.getElementById('main-screen').style.display  = 'none';
+  document.getElementById('order-screen').style.display = 'block';
+}
+
+function backToMain() {
+  document.getElementById('order-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display  = 'block';
+}
+
+// ─── 注文送信 ────────────────────────────
+async function submitOrder() {
+  const parent = document.getElementById('f-parent').value.trim();
+  const name   = document.getElementById('f-name').value.trim();
+  const email  = document.getElementById('f-email').value.trim();
+  if (!parent || !name || !email) { alert('保護者名・選手名・メールアドレスは必須です'); return; }
+
+  const now    = new Date();
+  const ordNum = TEAM_CODE + '-' + now.getFullYear().toString().slice(2)
+               + String(now.getMonth()+1).padStart(2,'0')
+               + String(now.getDate()).padStart(2,'0')
+               + '-' + Math.floor(Math.random()*9000+1000);
+
+  const payload = {
+    teamCode: TEAM_CODE,
+    ordNum,
+    profile: {
+      parentName: parent,
+      name,
+      grade:  document.getElementById('f-grade').value.trim(),
+      number: document.getElementById('f-number').value.trim(),
+      email,
+      phone:  document.getElementById('f-phone').value.trim(),
+      pay:    document.getElementById('f-pay').value,
+    },
+    cart: cart.map(item => ({
+      itemCode: item.prod.banban,
+      name:     item.prod.name,
+      size:     item.size,
+      qty:      item.qty,
+      price:    item.prod.price,
+    })),
+    total: cart.reduce((s, i) => s + i.prod.price * i.qty, 0),
+  };
+
+  try {
+    document.querySelector('.submit-btn').textContent = '送信中...';
+    document.querySelector('.submit-btn').disabled = true;
+    await fetch(GAS_URL, {
+      method: 'POST',
+      mode:   'no-cors',
+      body:   JSON.stringify(payload),
+    });
+    document.getElementById('order-screen').style.display = 'none';
+    document.getElementById('done-screen').style.display  = 'flex';
+  } catch(e) {
+    alert('送信に失敗しました。通信環境を確認してください。');
+    document.querySelector('.submit-btn').textContent = '✅ 注文を確定する';
+    document.querySelector('.submit-btn').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
